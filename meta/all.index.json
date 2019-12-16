@@ -1,0 +1,375 @@
+{
+  "ownKey": "internal",
+  "childrenPages": {
+    "wiki": {
+      "ownKey": "wiki",
+      "childrenPages": {
+        "overview": {
+          "ownKey": "overview",
+          "ownPages": [{
+            "reference": {
+              "path": "wiki",
+              "baseUrl": "https://copper-leaf.github.io/trellis",
+              "fileName": "overview",
+              "extension": "html",
+              "usePrettyUrl": true,
+              "link": "https://copper-leaf.github.io/trellis/wiki/overview"
+            },
+            "next": {
+              "path": "wiki",
+              "baseUrl": "https://copper-leaf.github.io/trellis",
+              "fileName": "installation",
+              "extension": "html",
+              "usePrettyUrl": true,
+              "link": "https://copper-leaf.github.io/trellis/wiki/installation"
+            },
+            "description": "",
+            "title": "Overview",
+            "content": "<p>Business logic is hard, and is often quite difficult to manage consistently across an application. Furthermore, it is\ndifficult to evaluate business logic in the normal manner, with a bunch of <code>ifs<\/code>, <code>switches<\/code>, and so on, when the data\nneeded to validate these constraints are often the result of API calls or database queries which should be run\nasynchronously. The result is a mess of callbacks and spaghetti code that is not typically managed well and ends up\nbeing repeated throughout the application, which makes it difficult to maintain.<\/p>\n<p><em>Trellis<\/em> provides a small type-safe interface for building objects which encapsulate and validate business logic, and a\nfluent API for combining these smaller specs into larger, more complex specs. The result is that multiple conditions can\nbe implemented as needed, but evaluating the complex spec is just the same as evaluating a small spec: just pass the\nobject to test and a callback will eventually give you the result. And since the building and testing of the spec is now\nseparated from the code that needs to validate against the spec, you can now dynamically build the spec and inject it\nwith an IoC container, giving you a clean separation of concerns in your code.<\/p>\n"
+          }]
+        },
+        "features": {
+          "ownKey": "features",
+          "childrenPages": {
+            "introspection": {
+              "ownKey": "introspection",
+              "ownPages": [{
+                "reference": {
+                  "path": "wiki/features",
+                  "baseUrl": "https://copper-leaf.github.io/trellis",
+                  "fileName": "introspection",
+                  "extension": "html",
+                  "usePrettyUrl": true,
+                  "link": "https://copper-leaf.github.io/trellis/wiki/features/introspection"
+                },
+                "next": {
+                  "path": "wiki",
+                  "baseUrl": "https://copper-leaf.github.io/trellis",
+                  "fileName": "examples",
+                  "extension": "html",
+                  "usePrettyUrl": true,
+                  "link": "https://copper-leaf.github.io/trellis/wiki/examples"
+                },
+                "previous": {
+                  "path": "wiki/features",
+                  "baseUrl": "https://copper-leaf.github.io/trellis",
+                  "fileName": "java-interop",
+                  "extension": "html",
+                  "usePrettyUrl": true,
+                  "link": "https://copper-leaf.github.io/trellis/wiki/features/java-interop"
+                },
+                "description": "",
+                "title": "Introspection",
+                "content": "<h3 id=\"spekvisitors\">SpekVisitors<\/h3>\n<p>Until now, we have not mentioned the first parameter of the <code>Spek.evaluate(...)<\/code> method. It is a\n<a href=\"https://en.wikipedia.org/wiki/Visitor_pattern\">GOF Visitor<\/a> that is passed through all Speks as they do their\nprocessing, allowing you to receive events as the Spek tree is evaluated. Here is the full Visitor API:<\/p>\n<pre><code class=\"language-kotlin\">interface SpekVisitor {\n    fun enter(candidate: Spek&lt;*, *&gt;)\n    fun &lt;U&gt; leave(candidate: Spek&lt;*, *&gt;, result: U)\n}\n<\/code><\/pre>\n<p>The visitor receives the <code>enter()<\/code> event as the very first call in every Spek's <code>evaluate()<\/code> function, and <code>leave()<\/code> as\nthe very last call. In both cases you receive the Spek firing the event, and when leaving you also receive the value it\nis returning, so you can inspect the state of sub-trees of the full Spek object.<\/p>\n<p>There are a few handy Visitors built-in for your use: the <code>EmptyVisitor<\/code> singleton, the <code>PrintVisitor<\/code> class, and the\n<code>VisitorFilter<\/code> class.<\/p>\n<p><code>EmptyVisitor<\/code> does nothing, simply discarding the events as they are received.<\/p>\n<p><code>PrintVisitor<\/code> will log the events and track the nesting of each Spek, showing a nicely-formatted tree. By default it\nlogs to <code>System.out<\/code>, but on creation you can configure it to any <code>PrintStream<\/code> to capture the output.<\/p>\n<p><code>VisitorFilter<\/code> accepts another Visitor and a callback predicate as parameters. Only if the predicate succeeds will the\nevent be passed through to the Visitor it wraps, so you can filter out inner nodes and things like that, for example.<\/p>\n<p>The usage of any of these is the same: <code>val result = spek.evaluate(visitor, candidate)<\/code><\/p>\n<h3 id=\"spekmatcher\">SpekMatcher<\/h3>\n<p>A natural extension of the Visitor API is to use it to determine which nodes were actually hit during the process of\nevaluating the tree. For example, a boolean expression will fail-fast and ignore sub-trees of the Spek, but it would be\nnice to <em>know<\/em> which sub-trees were not evaluated. Matchers will provide you with this information.<\/p>\n<p>Is essentially has two steps: the first step &quot;explores&quot; the Spek tree, recursively locating the children of each Spek\nuntil all nodes have been explored. Then, as the Spek is being evaluated, a Visitor can match the events received with\nthe nodes that it previously explored. After the evaluation is complete, you will be left with a <code>SpekMatcher<\/code>\ncontaining a list of all Nodes that were discovered, and related metadata about whether it was evaluated or not and its\nresult.<\/p>\n<p>Usage looks like the following. Basically, instead of calling <code>spek.evaluate(...)<\/code>, call the <code>spek.match()<\/code> extension\nmethod. Instead of returning the result, you will receive back the <code>SpekMatcher<\/code>:<\/p>\n<pre><code class=\"language-kotlin\">val matchResult = spek.match(input) {\n    filter { it.children.isEmpty() } // only match leaf nodes\n    onNodeFound { }                  // Receive an additional event whenever a node is discovered in the exploration phase\n    onNodeHit   { }                  // Receive an additional event whenever a node is hit in the evaluation phase\n}\nval result = matchResult.result // the value returned from the Spek\nval matches = matchResult.matches // a list of matched Speks and metadata\n<\/code><\/pre>\n"
+              }]
+            },
+            "trellis-core": {
+              "ownKey": "trellis-core",
+              "ownPages": [{
+                "reference": {
+                  "path": "wiki/features",
+                  "baseUrl": "https://copper-leaf.github.io/trellis",
+                  "fileName": "trellis-core",
+                  "extension": "html",
+                  "usePrettyUrl": true,
+                  "link": "https://copper-leaf.github.io/trellis/wiki/features/trellis-core"
+                },
+                "next": {
+                  "path": "wiki/features",
+                  "baseUrl": "https://copper-leaf.github.io/trellis",
+                  "fileName": "trellis-dsl",
+                  "extension": "html",
+                  "usePrettyUrl": true,
+                  "link": "https://copper-leaf.github.io/trellis/wiki/features/trellis-dsl"
+                },
+                "previous": {
+                  "path": "wiki",
+                  "baseUrl": "https://copper-leaf.github.io/trellis",
+                  "fileName": "features",
+                  "extension": "html",
+                  "usePrettyUrl": true,
+                  "link": "https://copper-leaf.github.io/trellis/wiki/features"
+                },
+                "description": "",
+                "title": "Trellis Core",
+                "content": "<p>A <code>Spek<\/code> is any object that implements the following interface:<\/p>\n<pre><code class=\"language-kotlin\">interface Spek&lt;T, U&gt; {\n    suspend fun evaluate(visitor: SpekVisitor, candidate: T): U\n}\n<\/code><\/pre>\n<p>You'll notice that the method is marked with <code>suspend<\/code>, which means it is equipped to be run as a Kotlin Coroutine, and\nso building complex speks from other speks is particularly nice in Kotlin. Using this library from Java, the equivalent\ninterface is similar, but a callback is used instead of a return type:<\/p>\n<pre><code class=\"language-java\">public interface Spek&lt;T, U&gt; {\n    void evaluate(SpekVisitor visitor, T input, Continuation&lt;U&gt; callback);\n}\n<\/code><\/pre>\n<p>There are 3 other important classes which may be of use when chaining speks together, the <code>ValueSpek<\/code>, the\n<code>CandidateSpek<\/code>, and the <code>EqualsSpek<\/code>.<\/p>\n<p><code>ValueSpek<\/code> wraps a single value passed to its constructor, and the <code>evaluate()<\/code> method just returns that value. This is\nuseful for parameterizing your spec, so that thresholds can be set without changing the spec model itself, and so give\nsome of the more abstract speks concrete values to check against. Many of the spek extension functions include a method\nwhich accepts either a Spek or a raw value, and the raw value is just wrapped up in a spek behind-the-scenes.<\/p>\n<p><code>CandidateSpek<\/code> returns the candidate directly.<\/p>\n<p>The <code>EqualsSpek<\/code> checks for the equality of the result of 2 other speks. If the values are both instances of <code>Number<\/code>,\nthey are converted to <code>Double<\/code>s first before checking equality. All other values are compared using <code>.equals()<\/code>.<\/p>\n"
+              }]
+            },
+            "java-interop": {
+              "ownKey": "java-interop",
+              "ownPages": [{
+                "reference": {
+                  "path": "wiki/features",
+                  "baseUrl": "https://copper-leaf.github.io/trellis",
+                  "fileName": "java-interop",
+                  "extension": "html",
+                  "usePrettyUrl": true,
+                  "link": "https://copper-leaf.github.io/trellis/wiki/features/java-interop"
+                },
+                "next": {
+                  "path": "wiki/features",
+                  "baseUrl": "https://copper-leaf.github.io/trellis",
+                  "fileName": "introspection",
+                  "extension": "html",
+                  "usePrettyUrl": true,
+                  "link": "https://copper-leaf.github.io/trellis/wiki/features/introspection"
+                },
+                "previous": {
+                  "path": "wiki/features",
+                  "baseUrl": "https://copper-leaf.github.io/trellis",
+                  "fileName": "trellis-dsl",
+                  "extension": "html",
+                  "usePrettyUrl": true,
+                  "link": "https://copper-leaf.github.io/trellis/wiki/features/trellis-dsl"
+                },
+                "description": "",
+                "title": "Java Interop",
+                "content": "<p>Trellis uses Kotlin coroutines to implement all speks so that all evaluation is async by default. But because Kotlin\ncoroutines are a <em>compile-time<\/em> feature of <code>kotlinc<\/code>, they cannot be used directly by Java code. However, Trellis ships\nwith a couple helper functions that bridge the gap between the world of Kotlin coroutines and the world of Java.<\/p>\n<p>You can evaluate a result synchronously with <code>JavaKt.evaluateSync(spek, candidate)<\/code>. This will <em>block<\/em> the calling\nthread until the coroutine completes, using the coroutine function <code>runBlocking<\/code> internally, returning the result\nsyncronously.<\/p>\n<pre><code class=\"language-java\">double discount = JavaKt.evaluateSync(discountSpek, customer);\ncheckout(customer, cart, discount)\n<\/code><\/pre>\n<p>You can also evaluate a result asynchronously with <code>JavaKt.evaluateAync(spek, candidate, callback)<\/code>. Internally, this\nwill use <code>launch<\/code> to evaluate the coroutine <em>without blocking<\/em> the calling thread. When the result is ready, it will\ncall the callback function with the evaluated result. Note that, due to how Kotlin implements callbacks, you must return\n<code>null<\/code> with a type of <code>Unit<\/code> from your handler function.<\/p>\n<pre><code class=\"language-java\">JavaKt.evaluateAsync(discountSpek, customer, (discount) -&gt; {\n    checkout(customer, cart, discount);\n    return null;\n});\n<\/code><\/pre>\n<p>You can also create and use <code>Spek<\/code>s in Java code much the same as in Kotlin code. The Java interface looks slightly\ndifferent from the Kotlin interface, but you can ignore the extra <code>Continuation<\/code> parameter and just return the value\nas needed. The actual Kotlin compiler implementation of the coroutine is significantly more complex when it comes to\nevaluating other <code>Spek<\/code>s from within a <code>Spek<\/code>, so you really should only implement a <code>Spek<\/code> in Java if it is only\nreturning a value directly.<\/p>\n<p>For example, the <code>ValueSpek<\/code> directly returns a single value, and it's Java equivalent looks like this:<\/p>\n<pre><code class=\"language-java\">public final class ValueSpek&lt;T, U&gt; implements Spek&lt;T, U&gt; {\n    private final U value;\n\n    public ValueSpek(final U value) {\n        this.value = value;\n    }\n\n    @Override\n    public Object evaluate(T candidate, @NotNull Continuation&lt;? super U&gt; continuation) {\n        return value;\n    }\n}\n<\/code><\/pre>\n"
+              }]
+            },
+            "trellis-dsl": {
+              "ownKey": "trellis-dsl",
+              "ownPages": [{
+                "reference": {
+                  "path": "wiki/features",
+                  "baseUrl": "https://copper-leaf.github.io/trellis",
+                  "fileName": "trellis-dsl",
+                  "extension": "html",
+                  "usePrettyUrl": true,
+                  "link": "https://copper-leaf.github.io/trellis/wiki/features/trellis-dsl"
+                },
+                "next": {
+                  "path": "wiki/features",
+                  "baseUrl": "https://copper-leaf.github.io/trellis",
+                  "fileName": "java-interop",
+                  "extension": "html",
+                  "usePrettyUrl": true,
+                  "link": "https://copper-leaf.github.io/trellis/wiki/features/java-interop"
+                },
+                "previous": {
+                  "path": "wiki/features",
+                  "baseUrl": "https://copper-leaf.github.io/trellis",
+                  "fileName": "trellis-core",
+                  "extension": "html",
+                  "usePrettyUrl": true,
+                  "link": "https://copper-leaf.github.io/trellis/wiki/features/trellis-core"
+                },
+                "description": "",
+                "title": "Trellis DSL",
+                "content": "<p>The core Trellis library is perfect for building your specifications in a type-safe way, but being integrated into the\nprogramming language means that changes to Speks mean recompiling your code. But in some cases, it may be desirable to\nbuild and evaluate Speks dynamically, so that they may be changes via configuration files or APIs.<\/p>\n<p>Trellis has an additional module, <code>trellis-dsl<\/code>, that provides exactly this functionality. It has a minimal\nSpecification language for building and evaluating speks in a fluent, easy-to-read format. See the following examples\nfor usage on setting up and using the Trellis DSL:<\/p>\n<ul>\n<li><a href=\"https://copper-leaf.github.io/trellis/wiki/examples/boolean-logic\">Boolean Logic<\/a><\/li>\n<li><a href=\"https://copper-leaf.github.io/trellis/wiki/examples/numeric-logic\">Numeric Logic<\/a><\/li>\n<\/ul>\n"
+              }]
+            }
+          },
+          "ownPages": [{
+            "reference": {
+              "path": "wiki",
+              "baseUrl": "https://copper-leaf.github.io/trellis",
+              "fileName": "features",
+              "extension": "html",
+              "usePrettyUrl": true,
+              "link": "https://copper-leaf.github.io/trellis/wiki/features"
+            },
+            "next": {
+              "path": "wiki/features",
+              "baseUrl": "https://copper-leaf.github.io/trellis",
+              "fileName": "trellis-core",
+              "extension": "html",
+              "usePrettyUrl": true,
+              "link": "https://copper-leaf.github.io/trellis/wiki/features/trellis-core"
+            },
+            "previous": {
+              "path": "wiki",
+              "baseUrl": "https://copper-leaf.github.io/trellis",
+              "fileName": "installation",
+              "extension": "html",
+              "usePrettyUrl": true,
+              "link": "https://copper-leaf.github.io/trellis/wiki/installation"
+            },
+            "description": "",
+            "title": "Features",
+            "content": "<ul>\n<li>\n<p><a href=\"https://copper-leaf.github.io/trellis/wiki/features/trellis-core\">Trellis Core<\/a><\/p>\n<\/li>\n<li>\n<p><a href=\"https://copper-leaf.github.io/trellis/wiki/features/trellis-dsl\">Trellis DSL<\/a><\/p>\n<\/li>\n<li>\n<p><a href=\"https://copper-leaf.github.io/trellis/wiki/features/java-interop\">Java Interop<\/a><\/p>\n<\/li>\n<li>\n<p><a href=\"https://copper-leaf.github.io/trellis/wiki/features/introspection\">Introspection<\/a><\/p>\n<\/li>\n<\/ul>\n"
+          }]
+        },
+        "examples": {
+          "ownKey": "examples",
+          "childrenPages": {
+            "boolean-logic": {
+              "ownKey": "boolean-logic",
+              "ownPages": [{
+                "reference": {
+                  "path": "wiki/examples",
+                  "baseUrl": "https://copper-leaf.github.io/trellis",
+                  "fileName": "boolean-logic",
+                  "extension": "html",
+                  "usePrettyUrl": true,
+                  "link": "https://copper-leaf.github.io/trellis/wiki/examples/boolean-logic"
+                },
+                "next": {
+                  "path": "wiki/examples",
+                  "baseUrl": "https://copper-leaf.github.io/trellis",
+                  "fileName": "numeric-logic",
+                  "extension": "html",
+                  "usePrettyUrl": true,
+                  "link": "https://copper-leaf.github.io/trellis/wiki/examples/numeric-logic"
+                },
+                "previous": {
+                  "path": "wiki",
+                  "baseUrl": "https://copper-leaf.github.io/trellis",
+                  "fileName": "examples",
+                  "extension": "html",
+                  "usePrettyUrl": true,
+                  "link": "https://copper-leaf.github.io/trellis/wiki/examples"
+                },
+                "description": "",
+                "title": "Boolean Logic",
+                "content": "<p>One of the common use-cases of the Spek API is determining whether or not a candidate object satisfies the requirements,\nand if so, it can perform some action. An example is checking user permissions, where a given user can pass if one of\nthe following criteria is met:<\/p>\n<ul>\n<li>They have been manually granted the capability\nOR<\/li>\n<li>They are in the correct role AND this specific capability has not been revoked\nOR<\/li>\n<li>They are a super-user, and have implicit permission to do anything<\/li>\n<\/ul>\n<p>If the evaluation of this spec is <code>true<\/code>, then the user can perform that action, otherwise they are blocked from\nperforming it.<\/p>\n<p>Building such a <code>Spek<\/code> might look like the following:<\/p>\n<p><strong>Specification Builder<\/strong><\/p>\n<pre><code class=\"language-kotlin\">val permissionSpek = HasExplicitCapabilitySpek(&quot;write&quot;)\n        .or(IsRoleSpek(&quot;author&quot;).andNot(HasExplicitCapabilityRevokedSpek(&quot;write&quot;)))\n        .or(IsSuperuserSpek())\n\nval canWrite = permissionSpek.evaluate(user)\nif(canWrite) {\n    // perform write action\n}\n<\/code><\/pre>\n<p>Or, using the <a href=\"https://copper-leaf.github.io/trellis/wiki/features/trellis-dsl\">Trellis DSL<\/a>:<\/p>\n<p><strong>Specification Expression<\/strong><\/p>\n<pre><code>cap(write) or (role(author) and not capRevoked(write)) or superuser()\n<\/code><\/pre>\n<p><strong>Configuration<\/strong><\/p>\n<pre><code class=\"language-kotlin\">val context = SpekExpressionContext {\n    register(&quot;role&quot;) { cxt, args -&gt;\n        IsRoleSpek(args.first().typeSafe&lt;Any, Any, Any, String&gt;(cxt))\n    }\n    register(&quot;superuser&quot;) { _, _ -&gt;\n        IsSuperuserSpek()\n    }\n    register(&quot;cap&quot;) { cxt, args -&gt;\n        HasExplicitCapabilitySpek(args.first().typeSafe&lt;Any, Any, Any, String&gt;(cxt))\n    }\n    register(&quot;capRevoked&quot;) { cxt, args -&gt;\n        HasExplicitCapabilityRevokedSpek(args.first().typeSafe&lt;Any, Any, Any, String&gt;(cxt))\n    }\n}\nval canWrite = TrellisDsl.evaluate&lt;User, Boolean&gt;(\n    context,\n    &quot;cap(write) or (role(author) and not capRevoked(write)) or superuser()&quot;,\n    user\n)\nif(canWrite) {\n    // perform write action\n}\n<\/code><\/pre>\n"
+              }]
+            },
+            "numeric-logic": {
+              "ownKey": "numeric-logic",
+              "ownPages": [{
+                "reference": {
+                  "path": "wiki/examples",
+                  "baseUrl": "https://copper-leaf.github.io/trellis",
+                  "fileName": "numeric-logic",
+                  "extension": "html",
+                  "usePrettyUrl": true,
+                  "link": "https://copper-leaf.github.io/trellis/wiki/examples/numeric-logic"
+                },
+                "previous": {
+                  "path": "wiki/examples",
+                  "baseUrl": "https://copper-leaf.github.io/trellis",
+                  "fileName": "boolean-logic",
+                  "extension": "html",
+                  "usePrettyUrl": true,
+                  "link": "https://copper-leaf.github.io/trellis/wiki/examples/boolean-logic"
+                },
+                "description": "",
+                "title": "Numeric Logic",
+                "content": "<p>Another use-case is computing the value for a user with many branching conditions and complex logic to decide whether\na given condition should be applied. An example is computing the discount for a customer on an online store, which may\nfactor in customer loyalty, timely promotions, and coupon codes. The computation will look for the greatest possible\ndiscount of all those available, and apply that one at checkout:<\/p>\n<ul>\n<li>10% Loyalty discount after 1 year<\/li>\n<li>15% Loyalty discount after 2 years<\/li>\n<li>25% Loyalty discount after 5 years<\/li>\n<li>20% off during August for back-to-school promotion<\/li>\n<li>Additional 10% off for friends and family with coupon code<\/li>\n<\/ul>\n<p>Building such a <code>Spek<\/code> might look like the following:<\/p>\n<p><strong>Specification Builder<\/strong><\/p>\n<pre><code class=\"language-kotlin\">val discountSpek = LargestSpek(\n        LoyaltyDiscountSpek(discount=0.1, 1),\n        LoyaltyDiscountSpek(discount=0.15, 2),\n        LoyaltyDiscountSpek(discount=0.25, 5),\n        BetweenDatesSpek(LocalDate.of(2018, 8, 1), LocalDate.of(2018, 8, 31))\n            .then(\n                PromotionDiscount(discount=0.20), // then spek\n                ValueSpek(0)                      // else spek\n            )\n)\n.plus(CouponDiscountSpek(discount=0.1, code=&quot;friendsandfamily&quot;))\n\nval discount = discountSpek.evaluate(customer)\ncheckout(customer, cart, discount)\n<\/code><\/pre>\n<p>Or, using the <a href=\"https://copper-leaf.github.io/trellis/wiki/features/trellis-dsl\">Trellis DSL<\/a>:<\/p>\n<p><strong>Specification Expression<\/strong><\/p>\n<pre><code>largest(\n  loyalty('0.1', 1),\n  loyalty('0.15', 2),\n  loyalty('0.25', 5),\n  if(\n    betweenDates(\n      date(2018, 8, 1),\n      date(2018, 8, 31)\n    ),\n    promotion('0.2'),\n    '0.0'\n  )\n) + couponCode('0.1', friendsandfamily)\n<\/code><\/pre>\n<p><strong>Configuration<\/strong><\/p>\n<pre><code class=\"language-kotlin\">val context = SpekExpressionContext {\n    register { cxt, args -&gt;\n        val typesafeArgs = args\n            .map { it.typeSafe&lt;Any, Any, Any, Number&gt;(cxt) }\n            .toTypedArray()\n        LargestSpek(*typesafeArgs)\n    }\n    register(&quot;loyalty&quot;) { cxt, args -&gt;\n        LoyaltyDiscountSpek(\n            args[0].typeSafe&lt;Any, Any, Any, Double&gt;(cxt),\n            args[1].typeSafe&lt;Any, Any, Any, Int&gt;(cxt)\n        )\n    }\n    register(&quot;couponCode&quot;) { cxt, args -&gt;\n        CouponDiscountSpek(\n            args[0].typeSafe&lt;Any, Any, Any, Double&gt;(cxt),\n            args[1].typeSafe&lt;Any, Any, Any, String&gt;(cxt)\n        )\n    }\n    register(&quot;promotion&quot;) { cxt, args -&gt;\n        PromotionDiscountSpek(\n            args[0].typeSafe&lt;Any, Any, Any, Double&gt;(cxt)\n        )\n    }\n    register(&quot;betweenDates&quot;) { cxt, args -&gt;\n        BetweenDatesSpek(\n            args[0].typeSafe&lt;Any, Any, Any, LocalDate?&gt;(cxt),\n            args[1].typeSafe&lt;Any, Any, Any, LocalDate?&gt;(cxt),\n            ValueSpek((cxt as DiscountContext).currentDate)\n        )\n    }\n    register(&quot;date&quot;) { cxt, args -&gt;\n        DateSpek(\n            args[0].typeSafe&lt;Any, Any, Any, Int&gt;(cxt),\n            args[1].typeSafe&lt;Any, Any, Any, Int&gt;(cxt),\n            args[2].typeSafe&lt;Any, Any, Any, Int&gt;(cxt)\n        )\n    }\n    register(&quot;if&quot;) { cxt, args -&gt;\n        IfSpek(\n            args[0].typeSafe&lt;Any, Any, Any, Boolean&gt;(cxt),\n            args[1].typeSafe&lt;Any, Any, Any, Any&gt;(cxt),\n            args[2].typeSafe&lt;Any, Any, Any, Any&gt;(cxt)\n        )\n    }\n}\nval discount = TrellisDsl.evaluate&lt;Discount, Double&gt;(\n    context,\n    &quot;&quot;&quot;\n    |largest(\n    |  loyalty('0.1', 1),\n    |  loyalty('0.15', 2),\n    |  loyalty('0.25', 5),\n    |  if(\n    |    betweenDates(\n    |      date(2018, 8, 1),\n    |      date(2018, 8, 31)\n    |    ),\n    |    promotion('0.2'),\n    |    '0.0'\n    |  )\n    |) + couponCode('0.1', friendsandfamily)\n    &quot;&quot;&quot;.trimMargin(),\n    customer\n)\ncheckout(customer, cart, discount)\n<\/code><\/pre>\n"
+              }]
+            }
+          },
+          "ownPages": [{
+            "reference": {
+              "path": "wiki",
+              "baseUrl": "https://copper-leaf.github.io/trellis",
+              "fileName": "examples",
+              "extension": "html",
+              "usePrettyUrl": true,
+              "link": "https://copper-leaf.github.io/trellis/wiki/examples"
+            },
+            "next": {
+              "path": "wiki/examples",
+              "baseUrl": "https://copper-leaf.github.io/trellis",
+              "fileName": "boolean-logic",
+              "extension": "html",
+              "usePrettyUrl": true,
+              "link": "https://copper-leaf.github.io/trellis/wiki/examples/boolean-logic"
+            },
+            "previous": {
+              "path": "wiki/features",
+              "baseUrl": "https://copper-leaf.github.io/trellis",
+              "fileName": "introspection",
+              "extension": "html",
+              "usePrettyUrl": true,
+              "link": "https://copper-leaf.github.io/trellis/wiki/features/introspection"
+            },
+            "description": "",
+            "title": "Examples",
+            "content": "<ul>\n<li>\n<p><a href=\"https://copper-leaf.github.io/trellis/wiki/examples/boolean-logic\">Boolean Logic<\/a><\/p>\n<\/li>\n<li>\n<p><a href=\"https://copper-leaf.github.io/trellis/wiki/examples/numeric-logic\">Numeric Logic<\/a><\/p>\n<\/li>\n<\/ul>\n"
+          }]
+        },
+        "installation": {
+          "ownKey": "installation",
+          "ownPages": [{
+            "reference": {
+              "path": "wiki",
+              "baseUrl": "https://copper-leaf.github.io/trellis",
+              "fileName": "installation",
+              "extension": "html",
+              "usePrettyUrl": true,
+              "link": "https://copper-leaf.github.io/trellis/wiki/installation"
+            },
+            "next": {
+              "path": "wiki",
+              "baseUrl": "https://copper-leaf.github.io/trellis",
+              "fileName": "features",
+              "extension": "html",
+              "usePrettyUrl": true,
+              "link": "https://copper-leaf.github.io/trellis/wiki/features"
+            },
+            "previous": {
+              "path": "wiki",
+              "baseUrl": "https://copper-leaf.github.io/trellis",
+              "fileName": "overview",
+              "extension": "html",
+              "usePrettyUrl": true,
+              "link": "https://copper-leaf.github.io/trellis/wiki/overview"
+            },
+            "description": "",
+            "title": "Installation",
+            "content": "<p>Install with Jitpack.<\/p>\n<pre><code class=\"language-groovy\">repositories {\n    maven { url 'https://jitpack.io' }\n}\ndependencies {\n    implementation 'com.github.copper-leaf.trellis:trellis-core:{{site.version}}'\n    implementation 'com.github.copper-leaf.trellis:trellis-dsl:{{site.version}}'\n}\n<\/code><\/pre>\n"
+          }]
+        }
+      },
+      "ownPages": [{
+        "reference": {
+          "path": "",
+          "baseUrl": "https://copper-leaf.github.io/trellis",
+          "fileName": "wiki",
+          "extension": "html",
+          "usePrettyUrl": true,
+          "link": "https://copper-leaf.github.io/trellis/wiki"
+        },
+        "description": "",
+        "title": "Wiki",
+        "content": "<html>\n <head><\/head>\n <body>\n  <ul> \n   <li><a href=\"https://copper-leaf.github.io/trellis/wiki/overview\">Overview<\/a><\/li> \n   <li><a href=\"https://copper-leaf.github.io/trellis/wiki/installation\">Installation<\/a><\/li> \n  <\/ul> \n  <h2 id=\"features\"><a href=\"https://copper-leaf.github.io/trellis/wiki/features\">Features<\/a><\/h2> \n  <ul> \n   <li><a href=\"https://copper-leaf.github.io/trellis/wiki/features/trellis-core\">Trellis Core<\/a><\/li> \n   <li><a href=\"https://copper-leaf.github.io/trellis/wiki/features/trellis-dsl\">Trellis DSL<\/a><\/li> \n   <li><a href=\"https://copper-leaf.github.io/trellis/wiki/features/java-interop\">Java Interop<\/a><\/li> \n   <li><a href=\"https://copper-leaf.github.io/trellis/wiki/features/introspection\">Introspection<\/a><\/li> \n  <\/ul> \n  <h2 id=\"examples\"><a href=\"https://copper-leaf.github.io/trellis/wiki/examples\">Examples<\/a><\/h2> \n  <ul> \n   <li><a href=\"https://copper-leaf.github.io/trellis/wiki/examples/boolean-logic\">Boolean Logic<\/a><\/li> \n   <li><a href=\"https://copper-leaf.github.io/trellis/wiki/examples/numeric-logic\">Numeric Logic<\/a><\/li> \n  <\/ul> \n <\/body>\n<\/html>\n"
+      }]
+    },
+    "changelog": {
+      "ownKey": "changelog",
+      "ownPages": [{
+        "reference": {
+          "path": "",
+          "baseUrl": "https://copper-leaf.github.io/trellis",
+          "fileName": "changelog",
+          "extension": "html",
+          "usePrettyUrl": true,
+          "link": "https://copper-leaf.github.io/trellis/changelog"
+        },
+        "description": "",
+        "title": "Changelog",
+        "content": ""
+      }]
+    }
+  },
+  "ownPages": [
+    {
+      "reference": {
+        "path": "",
+        "baseUrl": "https://copper-leaf.github.io/trellis",
+        "fileName": "",
+        "extension": "html",
+        "usePrettyUrl": true,
+        "link": "https://copper-leaf.github.io/trellis"
+      },
+      "description": "",
+      "title": "Trellis",
+      "content": "<h1 id=\"trellis\">Trellis<\/h1>\n<hr />\n<blockquote>\n<p>A Kotlin implementation of the <a href=\"https://en.wikipedia.org/wiki/Specification_pattern\">Specification Pattern<\/a><\/p>\n<\/blockquote>\n<p><a href=\"https://travis-ci.org/copper-leaf/trellis\"><img src=\"https://travis-ci.org/copper-leaf/trellis.svg?branch=master\" alt=\"Build Status\" /><\/a>\n<a href=\"https://www.codacy.com/app/cjbrooks12/trellis?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=copper-leaf/trellis&amp;utm_campaign=Badge_Grade\"><img src=\"https://api.codacy.com/project/badge/Grade/ededa933de9e47059050db93071f8d09\" alt=\"Codacy Project Grade\" /><\/a>\n<a href=\"https://www.codacy.com/app/cjbrooks12/trellis?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=copper-leaf/trellis&amp;utm_campaign=Badge_Coverage\"><img src=\"https://api.codacy.com/project/badge/Coverage/ededa933de9e47059050db93071f8d09\" alt=\"Code Coverage\" /><\/a>\n<a href=\"https://jitpack.io/#copper-leaf/trellis\"><img src=\"https://jitpack.io/v/copper-leaf/trellis.svg\" alt=\"Jitpack Latest Version\" /><\/a><\/p>\n<p>Trellis is an implementation of the <a href=\"https://en.wikipedia.org/wiki/Specification_pattern\">Specification Pattern<\/a>\nwritten in Kotlin, and designed for asynchronous evaluation of specifications using Kotlin coroutines and dynamic\ncreation and evaluation.<\/p>\n<h2 id=\"why-did-it-write-it\">Why did it write it?<\/h2>\n<p>Business logic is hard, and is often quite difficult to manage consistently across an application. Furthermore, it is\ndifficult to evaluate business logic in the normal manner, with a bunch of <code>ifs<\/code>, <code>switches<\/code>, and so on, when the data\nneeded to validate these constraints are often the result of API calls or database queries which should be run\nasynchronously. The result is a mess of callbacks and spaghetti code that is not typically managed well and ends up\nbeing repeated throughout the application, which makes it difficult to maintain.<\/p>\n<p><em>Trellis<\/em> provides a small type-safe interface for building objects which encapsulate and validate business logic, and a\nfluent API for combining these smaller specs into larger, more complex specs. The result is that multiple conditions can\nbe implemented as needed, but evaluating the complex spec is just the same as evaluating a small spec: just pass the\nobject to test and a callback will eventually give you the result. And since the building and testing of the spec is now\nseparated from the code that needs to validate against the spec, you can now dynamically build the spec and inject it\nwith an IoC container, giving you a clean separation of concerns in your code.<\/p>\n<p>Common use cases are for evaluating boolean logic, and for computing complex numeric logic.<\/p>\n<h2 id=\"features\">Features<\/h2>\n<ul>\n<li><a href=\"https://copper-leaf.github.io/trellis/wiki/trellis-core\">Trellis Core<\/a>\n<ul>\n<li><a href=\"https://copper-leaf.github.io/trellis/wiki/java-interop\">Java Interop<\/a><\/li>\n<li><a href=\"https://copper-leaf.github.io/trellis/wiki/introspection\">Introspection<\/a><\/li>\n<\/ul>\n<\/li>\n<li><a href=\"https://copper-leaf.github.io/trellis/wiki/trellis-dsl\">Trellis DSL<\/a><\/li>\n<li><a href=\"https://copper-leaf.github.io/trellis/wiki/boolean-logic\">Boolean Logic<\/a><\/li>\n<li><a href=\"https://copper-leaf.github.io/trellis/wiki/numeric-logic\">Numeric Logic<\/a><\/li>\n<\/ul>\n<h2 id=\"installation\">Installation<\/h2>\n<p>Install with Jitpack.<\/p>\n<pre><code class=\"language-groovy\">repositories {\n    maven { url 'https://jitpack.io' }\n}\ndependencies {\n    implementation &quot;com.github.copper-leaf.trellis:trellis-core:${trellisVersion}&quot;\n    implementation &quot;com.github.copper-leaf.trellis:trellis-dsl:${trellisVersion}&quot;\n}\n<\/code><\/pre>\n<h2 id=\"notes\">Notes<\/h2>\n<p>There is some criticism over the use of the Specification pattern, as it tends be to abused and over-used, and instead\njust becomes a poor replacement of the logic that is handled in the language itself. While this is certainly true if the\nspeks are designed to be executed synchronously, being asynchronous, as implemented in this library, gives sufficient\nmotivation to use this pattern over the programming language logic itself. It is difficult to cleanly capture\nconditional and complex logic asynchronously, but this library allows it to be done in a way that doesn't feel\nasynchronous.<\/p>\n<p>Furthermore, by having the desired logic encapsulated in an object, this logic can be defined and tested elsewhere and\ninjected into the appropriate places with and IoC container, helping maintain a clear separation of concerns. In\naddition, it provides a structure and reusability around this kind of logic (read: maintainability) that would not exist\notherwise.<\/p>\n<p>And lastly, by providing a DSL, Speks can be created dynamically, at runtime, without recompiling your code.<\/p>\n<h2 id=\"references\">References<\/h2>\n<ul>\n<li><a href=\"https://www.michael-whelan.net/rules-design-pattern\">https://www.michael-whelan.net/rules-design-pattern<\/a><\/li>\n<li><a href=\"https://www.martinfowler.com/apsupp/spec.pdf\">https://www.martinfowler.com/apsupp/spec.pdf<\/a><\/li>\n<li><a href=\"https://en.wikipedia.org/wiki/Specification_pattern\">https://en.wikipedia.org/wiki/Specification_pattern<\/a><\/li>\n<\/ul>\n"
+    },
+    {
+      "reference": {
+        "path": "",
+        "baseUrl": "https://copper-leaf.github.io/trellis",
+        "fileName": "404",
+        "extension": "html",
+        "usePrettyUrl": false,
+        "link": "https://copper-leaf.github.io/trellis/404.html"
+      },
+      "description": "",
+      "title": "Trellis",
+      "content": "\n<div class=\"has-text-centered\">\n  <div class=\"is-size-1\" style=\"margin-bottom: 30px;\">There's nothing here!<\/div>\n  <img src=\"https://copper-leaf.github.io/trellis/assets/media/undraw_page_not_found.svg\" alt=\"Not Found\">\n  <!-- Image courtesy of unDraw (https://undraw.co/license) -->\n<\/div>\n"
+    }
+  ]
+}

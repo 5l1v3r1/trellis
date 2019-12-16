@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd"
+    xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>https://copper-leaf.github.io/trellis/wiki</loc>
+        <lastmod>2019-12-16T22:44:57.927</lastmod>
+        <priority>0.0</priority>
+        
+    </url>
+    <url>
+        <loc>https://copper-leaf.github.io/trellis/wiki/overview</loc>
+        <lastmod>2019-12-16T22:44:57.898</lastmod>
+        <priority>0.0</priority>
+        
+    </url>
+    <url>
+        <loc>https://copper-leaf.github.io/trellis/wiki/installation</loc>
+        <lastmod>2019-12-16T22:44:57.899</lastmod>
+        <priority>0.0</priority>
+        
+    </url>
+    <url>
+        <loc>https://copper-leaf.github.io/trellis/wiki/features</loc>
+        <lastmod>2019-12-16T22:44:57.906</lastmod>
+        <priority>0.0</priority>
+        
+    </url>
+    <url>
+        <loc>https://copper-leaf.github.io/trellis/wiki/features/trellis-core</loc>
+        <lastmod>2019-12-16T22:44:57.907</lastmod>
+        <priority>0.0</priority>
+        
+    </url>
+    <url>
+        <loc>https://copper-leaf.github.io/trellis/wiki/features/trellis-dsl</loc>
+        <lastmod>2019-12-16T22:44:57.909</lastmod>
+        <priority>0.0</priority>
+        
+    </url>
+    <url>
+        <loc>https://copper-leaf.github.io/trellis/wiki/features/java-interop</loc>
+        <lastmod>2019-12-16T22:44:57.910</lastmod>
+        <priority>0.0</priority>
+        
+    </url>
+    <url>
+        <loc>https://copper-leaf.github.io/trellis/wiki/features/introspection</loc>
+        <lastmod>2019-12-16T22:44:57.912</lastmod>
+        <priority>0.0</priority>
+        
+    </url>
+    <url>
+        <loc>https://copper-leaf.github.io/trellis/wiki/examples</loc>
+        <lastmod>2019-12-16T22:44:57.913</lastmod>
+        <priority>0.0</priority>
+        
+    </url>
+    <url>
+        <loc>https://copper-leaf.github.io/trellis/wiki/examples/boolean-logic</loc>
+        <lastmod>2019-12-16T22:44:57.914</lastmod>
+        <priority>0.0</priority>
+        
+    </url>
+    <url>
+        <loc>https://copper-leaf.github.io/trellis/wiki/examples/numeric-logic</loc>
+        <lastmod>2019-12-16T22:44:57.916</lastmod>
+        <priority>0.0</priority>
+        
+    </url>
+    
+</urlset>
